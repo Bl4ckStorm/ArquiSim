@@ -98,6 +98,101 @@ Resultado ejecutar(CPU *cpu, const Instruccion *in)
      * Pruebe con:  make test
      */
 
+    /* ---------------- sub ---------------- */
+    if (es(in, "sub")) {
+        uint32_t r = restar_con_banderas(cpu, cpu->reg[in->rs], cpu->reg[in->rt]);
+        if (es(in, "sub") && (cpu->banderas & BANDERA_V))
+            return excepcion(cpu, "desbordamiento aritmético en sub");
+        escribir_registro(cpu, in->rd, r);
+        return OK;
+    }
+
+    /* ---------------- Lógicas tipo R: and, or, xor, nor ---------------- */
+    if (es(in, "and")) {
+        uint32_t r = cpu->reg[in->rs] & cpu->reg[in->rt];
+        escribir_registro(cpu, in->rd, banderas_logicas(cpu, r));
+        return OK;
+    }
+    if (es(in, "or")) {
+        uint32_t r = cpu->reg[in->rs] | cpu->reg[in->rt];
+        escribir_registro(cpu, in->rd, banderas_logicas(cpu, r));
+        return OK;
+    }
+    if (es(in, "xor")) {
+        uint32_t r = cpu->reg[in->rs] ^ cpu->reg[in->rt];
+        escribir_registro(cpu, in->rd, banderas_logicas(cpu, r));
+        return OK;
+    }
+    if (es(in, "nor")) {
+        uint32_t r = ~(cpu->reg[in->rs] | cpu->reg[in->rt]);
+        escribir_registro(cpu, in->rd, banderas_logicas(cpu, r));
+        return OK;
+    }
+
+    /* ---------------- Desplazamientos: sll, srl, sra ---------------- */
+    if (es(in, "sll")) {
+        uint32_t r = cpu->reg[in->rt] << in->shamt;
+        escribir_registro(cpu, in->rd, r);
+        return OK;
+    }
+    if (es(in, "srl")) {
+        uint32_t r = cpu->reg[in->rt] >> in->shamt;
+        escribir_registro(cpu, in->rd, r);
+        return OK;
+    }
+    if (es(in, "sra")) {
+        /* Desplazamiento aritmético: conserva el signo convirtiendo a int32_t */
+        int32_t val = (int32_t)cpu->reg[in->rt];
+        uint32_t r = (uint32_t)(val >> in->shamt);
+        escribir_registro(cpu, in->rd, r);
+        return OK;
+    }
+
+    /* ---------------- Lógicas tipo I: andi, ori, xori, lui ---------------- */
+    if (es(in, "andi")) {
+        /* Inmediato extendido con ceros: in->imm */
+        uint32_t r = cpu->reg[in->rs] & in->imm;
+        escribir_registro(cpu, in->rt, banderas_logicas(cpu, r));
+        return OK;
+    }
+    if (es(in, "ori")) {
+        uint32_t r = cpu->reg[in->rs] | in->imm;
+        escribir_registro(cpu, in->rt, banderas_logicas(cpu, r));
+        return OK;
+    }
+    if (es(in, "xori")) {
+        uint32_t r = cpu->reg[in->rs] ^ in->imm;
+        escribir_registro(cpu, in->rt, banderas_logicas(cpu, r));
+        return OK;
+    }
+    if (es(in, "lui")) {
+        uint32_t r = in->imm << 16;
+        escribir_registro(cpu, in->rt, r);
+        return OK;
+    }
+
+    /* ---------------- 04_sin_signo.asm ---------------- */
+    if (es(in, "addu")) {
+        /* Suma sin verificar excepción por desbordamiento */
+        uint32_t r = sumar_con_banderas(cpu, cpu->reg[in->rs], cpu->reg[in->rt]);
+        escribir_registro(cpu, in->rd, r);
+        return OK;
+    }
+
+    if (es(in, "subu")) {
+        /* Resta sin verificar excepción por desbordamiento */
+        uint32_t r = restar_con_banderas(cpu, cpu->reg[in->rs], cpu->reg[in->rt]);
+        escribir_registro(cpu, in->rd, r);
+        return OK;
+    }
+
+    if (es(in, "addiu")) {
+        /* Inmediato con signo (in->simm), sin excepción por desbordamiento */
+        uint32_t r = sumar_con_banderas(cpu, cpu->reg[in->rs], (uint32_t)in->simm);
+        escribir_registro(cpu, in->rt, r);
+        return OK;
+    }
+
     return excepcion(cpu, "instrucción '%s' no implementada (ver src/ejecutar.c)",
                      in->def->nombre);
 }
