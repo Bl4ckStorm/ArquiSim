@@ -273,6 +273,101 @@ Resultado ejecutar(CPU *cpu, const Instruccion *in)
         return OK;
     }
 
+
+    /* Etapa 2: Acceso a Memoria    */
+    if (es(in, "lw")) {
+        uint32_t dir = cpu->reg[in->rs] + (uint32_t)in->simm;
+        uint32_t valor;
+        if (leer_palabra(cpu, dir, &valor) != OK)
+            return EXCEPCION;
+        escribir_registro(cpu, in->rt, valor);
+        return OK;
+    }
+
+    if (es(in, "sw")) {
+        uint32_t dir = cpu->reg[in->rs] + (uint32_t)in->simm;
+        if (escribir_palabra(cpu, dir, cpu->reg[in->rt]) != OK)
+            return EXCEPCION;
+        return OK;
+    }
+
+    if (es(in, "lb")) {
+        uint32_t dir = cpu->reg[in->rs] + (uint32_t)in->simm;
+        uint8_t byte;
+        if (leer_byte(cpu, dir, &byte) != OK)
+            return EXCEPCION;
+        /* Extensión de signo de 8 a 32 bits */
+        escribir_registro(cpu, in->rt, (uint32_t)(int32_t)(int8_t)byte);
+        return OK;
+    }
+
+    if (es(in, "lbu")) {
+        uint32_t dir = cpu->reg[in->rs] + (uint32_t)in->simm;
+        uint8_t byte;
+        if (leer_byte(cpu, dir, &byte) != OK)
+            return EXCEPCION;
+        /* Extensión con ceros */
+        escribir_registro(cpu, in->rt, (uint32_t)byte);
+        return OK;
+    }
+
+    if (es(in, "sb")) {
+        uint32_t dir = cpu->reg[in->rs] + (uint32_t)in->simm;
+        if (escribir_byte(cpu, dir, (uint8_t)(cpu->reg[in->rt] & 0xFFu)) != OK)
+            return EXCEPCION;
+        return OK;
+    }
+
+    /* Etapa 3: Control de Flujo, Funciones y Pila  */
+    if (es(in, "bne")) {
+        if (cpu->reg[in->rs] != cpu->reg[in->rt])
+            cpu->pc += (uint32_t)in->simm << 2;
+        return OK;
+    }
+
+    if (es(in, "beq")) {
+        if (cpu->reg[in->rs] == cpu->reg[in->rt])
+            cpu->pc += (uint32_t)in->simm << 2;
+        return OK;
+    }
+
+    if (es(in, "j")) {
+        cpu->pc = (cpu->pc & 0xF0000000u) | (in->direccion << 2);
+        return OK;
+    }
+
+    if (es(in, "jal")) {
+        escribir_registro(cpu, REG_RA, cpu->pc);
+        cpu->pc = (cpu->pc & 0xF0000000u) | (in->direccion << 2);
+        return OK;
+    }
+
+    if (es(in, "jr")) {
+        cpu->pc = cpu->reg[in->rs];
+        return OK;
+    }
+
+    if (es(in, "slt")) {
+        int32_t a = (int32_t)cpu->reg[in->rs];
+        int32_t b = (int32_t)cpu->reg[in->rt];
+        escribir_registro(cpu, in->rd, (a < b) ? 1 : 0);
+        return OK;
+    }
+
+    if (es(in, "sltu")) {
+        uint32_t a = cpu->reg[in->rs];
+        uint32_t b = cpu->reg[in->rt];
+        escribir_registro(cpu, in->rd, (a < b) ? 1 : 0);
+        return OK;
+    }
+
+    if (es(in, "slti")) {
+        int32_t a = (int32_t)cpu->reg[in->rs];
+        int32_t imm = in->simm;
+        escribir_registro(cpu, in->rt, (a < imm) ? 1 : 0);
+        return OK;
+    }
+
     return excepcion(cpu, "instrucción '%s' no implementada (ver src/ejecutar.c)",
                      in->def->nombre);
 }

@@ -67,3 +67,30 @@ xori   I  001110  -       rt,rs,imm    # rt = rs XOR imm     (imm extendido con 
 lui    I  001111  -       rt,imm       # rt = imm << 16
 
 # ---------------- Agregue aquí las instrucciones de las etapas 2 a 5 ----------------
+
+# Etapa 2: Acceso a memoria
+
+lw     I  100011  -       rt,imm(rs)
+sw     I  101011  -       rt,imm(rs)
+lb     I  100000  -       rt,imm(rs)   # rt = MEM8[rs + imm] (extensión de signo)
+lbu    I  100100  -       rt,imm(rs)   # rt = MEM8[rs + imm] (extensión con ceros)
+sb     I  101000  -       rt,imm(rs)   # MEM8[rs + imm] = 8 bits bajos de rt
+
+# Etapa 3: Control de Flujo, Funciones y Pila
+bne    I  000101  -       rs,rt,label
+beq    I  000100  -       rs,rt,label
+j      J  000010  -       label
+jal    J  000011  -       label
+jr     R  000000  001000  rs
+slt    R  000000  101010  rd,rs,rt
+sltu   R  000000  101011  rd,rs,rt
+slti   I  001010  -       rt,rs,imm
+
+# pseudoinstrucciones 15
+move   R 000000 100000 rd,rs     add
+not    R 000000 100111 rd,rs     nor
+clear  R 000000 100000 rd        add
+nop    R 000000 000000 -         sll
+li     I 001000 -      rt,imm    addi
+la     I 001000 -      rt,imm    addi
+b      I 000100 -      label     beq
