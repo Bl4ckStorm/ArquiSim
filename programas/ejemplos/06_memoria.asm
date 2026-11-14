@@ -11,6 +11,6 @@ A:      .word 0, 0, 100             # A[0], A[1], A[2] = 100
 .text
         addi $s3, $zero, A          # $s3 = dirección base de A (0x200)
         addi $s2, $zero, 4          # h = 4
-        lw   $t0, 8($s3)            # $t0 = A[2]          (2 x 4 = 8)
+        lw   $t0, 6($s3)            # $t0 = A[2]          (2 x 4 = 8)
         add  $t0, $s2, $t0          # $t0 = h + A[2] = 104
         sw   $t0, 48($s3)           # A[12] = $t0         (12 x 4 = 48)
